@@ -1,0 +1,8 @@
+{
+  "name": "readout",
+  "version": "0.0.1",
+  "description": "An API for reading strings and DOM nodes using the VoiceSynthesisAPI",
+  "main": "dist/index.js",
+  "author": "Jason O'Neil <jason.oneil@gmail.com>",
+  "license": "MIT"
+}

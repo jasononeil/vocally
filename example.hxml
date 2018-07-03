@@ -1,0 +1,8 @@
+-cp src
+-js dist/example.js
+-dce full
+-main Example
+
+# Lix stuff
+-D tink_core=1.17.0
+-cp /Users/jason.oneil/haxe/haxe_libraries/tink_core/1.17.0/haxelib/src
