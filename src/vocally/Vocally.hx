@@ -1,4 +1,4 @@
-package readout;
+package vocally;
 
 import js.html.*;
 import js.Browser.*;
@@ -13,10 +13,10 @@ typedef VoiceOptions = {
 };
 
 #if compile_library
-@:expose("ReadOut")
+@:expose("Vocally")
 @:keep
 #end
-class ReadOut {
+class Vocally {
 	public var voice: SpeechSynthesisVoice;
 	var utterSignal: SignalTrigger<SpeechSynthesisUtterance>;
 	var speechSynthesis: SpeechSynthesis;
@@ -33,7 +33,7 @@ class ReadOut {
 	/**
 	Say a piece of text
 	**/
-	public function say(text: String, ?options: VoiceOptions): ReadOut {
+	public function say(text: String, ?options: VoiceOptions): Vocally {
 		for (fragment in splitStringIntoChunks(text, targetLength)) {
 			var utterance = new SpeechSynthesisUtterance(fragment);
 			if (options != null) {
@@ -88,7 +88,7 @@ class ReadOut {
 	/**
 	Read a DOM node
 	**/
-	public function read(element: Element, ?options: VoiceOptions): ReadOut {
+	public function read(element: Element, ?options: VoiceOptions): Vocally {
 		if (element == null) return this;
 		var currentText = "";
 		for (child in element.childNodes) {

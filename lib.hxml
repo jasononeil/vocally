@@ -3,7 +3,7 @@ haxe_libraries/tink_core.hxml
 -js dist/index.js
 -D compile_library
 -dce full
-readout.ReadOut
+vocally.Vocally
 
 # Lix stuff
 -D tink_core=1.17.0

@@ -10,21 +10,21 @@ function $extend(from, fields) {
 var Example = function() { };
 Example.main = function() {
 	window.addEventListener("load",function() {
-		var ReadOut = new readout_ReadOut();
-		Example.setupEvents(ReadOut);
-		ReadOut.read(window.document.querySelector("article"));
+		var vocally1 = new vocally_Vocally();
+		Example.setupEvents(vocally1);
+		vocally1.say("Hello").pauseFor(1).say("my name is " + vocally1.voice.name).say("But you can call me computer");
+		vocally1.read(window.document.querySelector("article"));
 		var current = window.document.querySelector("#current");
-		console.log("src/Example.hx:18:",current);
-		ReadOut.onSpeak(function(u) {
+		vocally1.onSpeak(function(u) {
 			return current.innerText = u.text;
 		});
 		return;
 	});
 };
-Example.setupEvents = function(ReadOut) {
+Example.setupEvents = function(vocally) {
 	var btnPlayPause = window.document.querySelector("#btn_playpause");
 	btnPlayPause.addEventListener("click",function() {
-		ReadOut.togglePlaying();
+		vocally.togglePlaying();
 		return;
 	});
 };
@@ -83,14 +83,65 @@ js__$Boot_HaxeError.wrap = function(val) {
 js__$Boot_HaxeError.__super__ = Error;
 js__$Boot_HaxeError.prototype = $extend(Error.prototype,{
 });
-var readout_ReadOut = function() {
+var tink_core__$Callback_Callback_$Impl_$ = {};
+tink_core__$Callback_Callback_$Impl_$.invoke = function(this1,data) {
+	if(tink_core__$Callback_Callback_$Impl_$.depth < 1000) {
+		tink_core__$Callback_Callback_$Impl_$.depth++;
+		this1(data);
+		tink_core__$Callback_Callback_$Impl_$.depth--;
+	} else {
+		var _e = this1;
+		var f = function(data1) {
+			tink_core__$Callback_Callback_$Impl_$.invoke(_e,data1);
+		};
+		var data2 = data;
+		tink_core__$Callback_Callback_$Impl_$.defer(function() {
+			f(data2);
+		});
+	}
+};
+tink_core__$Callback_Callback_$Impl_$.defer = function(f) {
+	haxe_Timer.delay(f,0);
+};
+var tink_core__$Callback_LinkObject = function() { };
+var tink_core__$Callback_ListCell = function(cb,list) {
+	if(cb == null) {
+		throw new js__$Boot_HaxeError("callback expected but null received");
+	}
+	this.cb = cb;
+	this.list = list;
+};
+tink_core__$Callback_ListCell.__interfaces__ = [tink_core__$Callback_LinkObject];
+var tink_core__$Callback_CallbackList_$Impl_$ = {};
+tink_core__$Callback_CallbackList_$Impl_$.add = function(this1,cb) {
+	var node = new tink_core__$Callback_ListCell(cb,this1);
+	this1.push(node);
+	return node;
+};
+tink_core__$Callback_CallbackList_$Impl_$.invoke = function(this1,data) {
+	var _g = 0;
+	var _g1 = this1.slice();
+	while(_g < _g1.length) {
+		var cell = _g1[_g];
+		++_g;
+		if(cell.cb != null) {
+			tink_core__$Callback_Callback_$Impl_$.invoke(cell.cb,data);
+		}
+	}
+};
+var tink_core_SignalObject = function() { };
+var tink_core_SignalTrigger = function() {
+	this.handlers = [];
+};
+tink_core_SignalTrigger.__interfaces__ = [tink_core_SignalObject];
+var vocally_Vocally = function() {
 	this.targetLength = 115;
 	this.speechSynthesis = window.speechSynthesis;
 	this.voice = this.getDefaultVoice();
 	this.utterances = [];
 	this.utterSignal = new tink_core_SignalTrigger();
 };
-readout_ReadOut.splitStringIntoChunks = function(text,targetLength) {
+vocally_Vocally.splitStringIntoChunks = function(text,targetLength) {
 	var fragments = [];
 	while(text.length > targetLength) {
 		var remainingText = text;
@@ -114,11 +165,11 @@ readout_ReadOut.splitStringIntoChunks = function(text,targetLength) {
 	fragments.push(text);
 	return fragments;
 };
-readout_ReadOut.prototype = {
+vocally_Vocally.prototype = {
 	say: function(text,options) {
 		var _gthis = this;
 		var _g = 0;
-		var _g1 = readout_ReadOut.splitStringIntoChunks(text,this.targetLength);
+		var _g1 = vocally_Vocally.splitStringIntoChunks(text,this.targetLength);
 		while(_g < _g1.length) {
 			var fragment = _g1[_g];
 			++_g;
@@ -158,6 +209,22 @@ readout_ReadOut.prototype = {
 			this.utterances.push(utterance[0]);
 			this.speechSynthesis.speak(utterance[0]);
 		}
+		return this;
+	}
+	,pauseFor: function(timeInSeconds) {
+		var _gthis = this;
+		var pause = new SpeechSynthesisUtterance("...");
+		pause.volume = 0;
+		pause.voice = this.voice;
+		pause.addEventListener("start",function(e) {
+			_gthis.speechSynthesis.pause();
+			return window.setTimeout(function() {
+				_gthis.speechSynthesis.resume();
+				return;
+			},Math.round(timeInSeconds * 1000));
+		});
+		this.utterances.push(pause);
+		this.speechSynthesis.speak(pause);
 		return this;
 	}
 	,read: function(element,options) {
@@ -218,57 +285,6 @@ readout_ReadOut.prototype = {
 		return allVoices[0];
 	}
 };
-var tink_core__$Callback_Callback_$Impl_$ = {};
-tink_core__$Callback_Callback_$Impl_$.invoke = function(this1,data) {
-	if(tink_core__$Callback_Callback_$Impl_$.depth < 1000) {
-		tink_core__$Callback_Callback_$Impl_$.depth++;
-		this1(data);
-		tink_core__$Callback_Callback_$Impl_$.depth--;
-	} else {
-		var _e = this1;
-		var f = function(data1) {
-			tink_core__$Callback_Callback_$Impl_$.invoke(_e,data1);
-		};
-		var data2 = data;
-		tink_core__$Callback_Callback_$Impl_$.defer(function() {
-			f(data2);
-		});
-	}
-};
-tink_core__$Callback_Callback_$Impl_$.defer = function(f) {
-	haxe_Timer.delay(f,0);
-};
-var tink_core__$Callback_LinkObject = function() { };
-var tink_core__$Callback_ListCell = function(cb,list) {
-	if(cb == null) {
-		throw new js__$Boot_HaxeError("callback expected but null received");
-	}
-	this.cb = cb;
-	this.list = list;
-};
-tink_core__$Callback_ListCell.__interfaces__ = [tink_core__$Callback_LinkObject];
-var tink_core__$Callback_CallbackList_$Impl_$ = {};
-tink_core__$Callback_CallbackList_$Impl_$.add = function(this1,cb) {
-	var node = new tink_core__$Callback_ListCell(cb,this1);
-	this1.push(node);
-	return node;
-};
-tink_core__$Callback_CallbackList_$Impl_$.invoke = function(this1,data) {
-	var _g = 0;
-	var _g1 = this1.slice();
-	while(_g < _g1.length) {
-		var cell = _g1[_g];
-		++_g;
-		if(cell.cb != null) {
-			tink_core__$Callback_Callback_$Impl_$.invoke(cell.cb,data);
-		}
-	}
-};
-var tink_core_SignalObject = function() { };
-var tink_core_SignalTrigger = function() {
-	this.handlers = [];
-};
-tink_core_SignalTrigger.__interfaces__ = [tink_core_SignalObject];
 Object.defineProperty(js__$Boot_HaxeError.prototype,"message",{ get : function() {
 	return String(this.val);
 }});
