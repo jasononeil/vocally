@@ -113,14 +113,16 @@ var tink_core_SignalTrigger = function() {
 	this.handlers = [];
 };
 tink_core_SignalTrigger.__interfaces__ = [tink_core_SignalObject];
-var vocally_Vocally = $hx_exports["Vocally"] = function() {
+var vocally_Recognition = function() {
+};
+var vocally_Synthesis = function() {
 	this.targetLength = 115;
 	this.speechSynthesis = window.speechSynthesis;
 	this.voice = this.getDefaultVoice();
 	this.utterances = [];
 	this.utterSignal = new tink_core_SignalTrigger();
 };
-vocally_Vocally.splitStringIntoChunks = function(text,targetLength) {
+vocally_Synthesis.splitStringIntoChunks = function(text,targetLength) {
 	var fragments = [];
 	while(text.length > targetLength) {
 		var remainingText = text;
@@ -144,11 +146,11 @@ vocally_Vocally.splitStringIntoChunks = function(text,targetLength) {
 	fragments.push(text);
 	return fragments;
 };
-vocally_Vocally.prototype = {
+vocally_Synthesis.prototype = {
 	say: function(text,options) {
 		var _gthis = this;
 		var _g = 0;
-		var _g1 = vocally_Vocally.splitStringIntoChunks(text,this.targetLength);
+		var _g1 = vocally_Synthesis.splitStringIntoChunks(text,this.targetLength);
 		while(_g < _g1.length) {
 			var fragment = _g1[_g];
 			++_g;
@@ -240,6 +242,19 @@ vocally_Vocally.prototype = {
 	}
 	,onSpeak: function(cb) {
 		tink_core__$Callback_CallbackList_$Impl_$.add(this.utterSignal.handlers,cb);
+		return this;
+	}
+	,cancel: function() {
+		this.speechSynthesis.cancel();
+		return this;
+	}
+	,pause: function() {
+		this.speechSynthesis.pause();
+		return this;
+	}
+	,resume: function() {
+		this.speechSynthesis.resume();
+		return this;
 	}
 	,togglePlaying: function() {
 		if(this.speechSynthesis.paused) {
@@ -247,6 +262,7 @@ vocally_Vocally.prototype = {
 		} else {
 			this.speechSynthesis.pause();
 		}
+		return this;
 	}
 	,getVoices: function() {
 		return this.speechSynthesis.getVoices();
@@ -264,8 +280,47 @@ vocally_Vocally.prototype = {
 		return allVoices[0];
 	}
 };
+var vocally_Vocally = function() {
+	this.synthesis = new vocally_Synthesis();
+	this.recognition = new vocally_Recognition();
+};
+vocally_Vocally.prototype = {
+	say: function(text,options) {
+		this.synthesis.say(text,options);
+		return this;
+	}
+	,pauseFor: function(timeInSeconds) {
+		this.synthesis.pauseFor(timeInSeconds);
+		return this;
+	}
+	,read: function(element,options) {
+		this.synthesis.read(element,options);
+		return this;
+	}
+	,cancel: function() {
+		this.synthesis.cancel();
+		return this;
+	}
+	,pause: function() {
+		this.synthesis.pause();
+		return this;
+	}
+	,resume: function() {
+		this.synthesis.resume();
+		return this;
+	}
+	,togglePlaying: function() {
+		this.synthesis.togglePlaying();
+		return this;
+	}
+	,onSpeak: function(cb) {
+		this.synthesis.onSpeak(cb);
+		return this;
+	}
+};
 Object.defineProperty(js__$Boot_HaxeError.prototype,"message",{ get : function() {
 	return String(this.val);
 }});
 tink_core__$Callback_Callback_$Impl_$.depth = 0;
+vocally_Vocally.instance = new vocally_Vocally();
 })(typeof exports != "undefined" ? exports : typeof window != "undefined" ? window : typeof self != "undefined" ? self : this);

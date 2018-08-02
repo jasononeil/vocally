@@ -12,20 +12,18 @@ Example.main = function() {
 	window.addEventListener("load",function() {
 		var vocally1 = new vocally_Vocally();
 		Example.setupEvents(vocally1);
-		vocally1.say("Hello").pauseFor(1).say("my name is " + vocally1.voice.name).say("But you can call me computer");
+		vocally1.say("Hello").pauseFor(1).say("my name is " + vocally1.synthesis.voice.name).say("But you can call me computer");
 		vocally1.read(window.document.querySelector("article"));
 		var current = window.document.querySelector("#current");
-		vocally1.onSpeak(function(u) {
+		return vocally1.onSpeak(function(u) {
 			return current.innerText = u.text;
 		});
-		return;
 	});
 };
 Example.setupEvents = function(vocally) {
 	var btnPlayPause = window.document.querySelector("#btn_playpause");
 	btnPlayPause.addEventListener("click",function() {
-		vocally.togglePlaying();
-		return;
+		return vocally.togglePlaying();
 	});
 };
 var HxOverrides = function() { };
@@ -134,14 +132,16 @@ var tink_core_SignalTrigger = function() {
 	this.handlers = [];
 };
 tink_core_SignalTrigger.__interfaces__ = [tink_core_SignalObject];
-var vocally_Vocally = function() {
+var vocally_Recognition = function() {
+};
+var vocally_Synthesis = function() {
 	this.targetLength = 115;
 	this.speechSynthesis = window.speechSynthesis;
 	this.voice = this.getDefaultVoice();
 	this.utterances = [];
 	this.utterSignal = new tink_core_SignalTrigger();
 };
-vocally_Vocally.splitStringIntoChunks = function(text,targetLength) {
+vocally_Synthesis.splitStringIntoChunks = function(text,targetLength) {
 	var fragments = [];
 	while(text.length > targetLength) {
 		var remainingText = text;
@@ -165,11 +165,11 @@ vocally_Vocally.splitStringIntoChunks = function(text,targetLength) {
 	fragments.push(text);
 	return fragments;
 };
-vocally_Vocally.prototype = {
+vocally_Synthesis.prototype = {
 	say: function(text,options) {
 		var _gthis = this;
 		var _g = 0;
-		var _g1 = vocally_Vocally.splitStringIntoChunks(text,this.targetLength);
+		var _g1 = vocally_Synthesis.splitStringIntoChunks(text,this.targetLength);
 		while(_g < _g1.length) {
 			var fragment = _g1[_g];
 			++_g;
@@ -261,6 +261,7 @@ vocally_Vocally.prototype = {
 	}
 	,onSpeak: function(cb) {
 		tink_core__$Callback_CallbackList_$Impl_$.add(this.utterSignal.handlers,cb);
+		return this;
 	}
 	,togglePlaying: function() {
 		if(this.speechSynthesis.paused) {
@@ -268,6 +269,7 @@ vocally_Vocally.prototype = {
 		} else {
 			this.speechSynthesis.pause();
 		}
+		return this;
 	}
 	,getVoices: function() {
 		return this.speechSynthesis.getVoices();
@@ -283,6 +285,32 @@ vocally_Vocally.prototype = {
 			}
 		}
 		return allVoices[0];
+	}
+};
+var vocally_Vocally = function() {
+	this.synthesis = new vocally_Synthesis();
+	this.recognition = new vocally_Recognition();
+};
+vocally_Vocally.prototype = {
+	say: function(text,options) {
+		this.synthesis.say(text,options);
+		return this;
+	}
+	,pauseFor: function(timeInSeconds) {
+		this.synthesis.pauseFor(timeInSeconds);
+		return this;
+	}
+	,read: function(element,options) {
+		this.synthesis.read(element,options);
+		return this;
+	}
+	,togglePlaying: function() {
+		this.synthesis.togglePlaying();
+		return this;
+	}
+	,onSpeak: function(cb) {
+		this.synthesis.onSpeak(cb);
+		return this;
 	}
 };
 Object.defineProperty(js__$Boot_HaxeError.prototype,"message",{ get : function() {

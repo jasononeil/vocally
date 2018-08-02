@@ -10,7 +10,7 @@ class Example {
 			vocally
 				.say('Hello')
 				.pauseFor(1)
-				.say('my name is ${vocally.voice.name}')
+				.say('my name is ${vocally.synthesis.voice.name}')
 				.say('But you can call me computer');
 			vocally.read(document.querySelector('article'));
 
