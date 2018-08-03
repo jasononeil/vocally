@@ -15,8 +15,7 @@ typedef VoiceOptions = {
 #if compile_library
 @:keep
 #end
-class Synthesis {
-	public var voice: SpeechSynthesisVoice;
+class VSpeechSynthesis {
 	var utterSignal: SignalTrigger<SpeechSynthesisUtterance>;
 	var speechSynthesis: SpeechSynthesis;
 	var utterances: Array<SpeechSynthesisUtterance>;
@@ -24,7 +23,6 @@ class Synthesis {
 
 	public function new() {
 		this.speechSynthesis = window.speechSynthesis;
-		this.voice = getDefaultVoice();
 		this.utterances = [];
 		this.utterSignal = new SignalTrigger();
 	}
@@ -32,7 +30,7 @@ class Synthesis {
 	/**
 	Say a piece of text
 	**/
-	public function say(text: String, ?options: VoiceOptions): Synthesis {
+	public function say(text: String, ?options: VoiceOptions): VSpeechSynthesis {
 		for (fragment in splitStringIntoChunks(text, targetLength)) {
 			var utterance = new SpeechSynthesisUtterance(fragment);
 			if (options != null) {
@@ -42,7 +40,7 @@ class Synthesis {
 				if (options.voice != null) utterance.voice = options.voice;
 				if (options.volume != null) utterance.volume = options.volume;
 			} else {
-				utterance.voice = this.voice;
+				utterance.voice = this.getDefaultVoice();
 			}
 			utterance.addEventListener("start", () -> {
 				utterSignal.trigger(utterance);
@@ -64,13 +62,13 @@ class Synthesis {
 	Please note due to implementation details the pause will likely be slightly too long.
 	It's a pretty crummy implementation.
 	**/
-	public function pauseFor(timeInSeconds: Float): Synthesis {
+	public function pauseFor(timeInSeconds: Float): VSpeechSynthesis {
 		// We need something that is read aloud, and "..." is read aloud as "dot".
 		// When it is read, we manually pause and restart after a timeout, and make sure the utterance has no volume.
 		// A better solution may be to use an SSML mark to add a gap.
 		var pause = new SpeechSynthesisUtterance('...');
 		pause.volume = 0;
-		pause.voice = this.voice;
+		pause.voice = this.getDefaultVoice();
 		pause.addEventListener("start", (e: SpeechSynthesisEvent) -> {
 			speechSynthesis.pause();
 			window.setTimeout(
@@ -86,7 +84,7 @@ class Synthesis {
 	/**
 	Read a DOM node
 	**/
-	public function read(element: Element, ?options: VoiceOptions): Synthesis {
+	public function read(element: Element, ?options: VoiceOptions): VSpeechSynthesis {
 		if (element == null) return this;
 		var currentText = "";
 		for (child in element.childNodes) {
@@ -115,27 +113,27 @@ class Synthesis {
 	/**
 
 	**/
-	public function onSpeak(cb: Callback<SpeechSynthesisUtterance>): Synthesis {
+	public function onSpeak(cb: Callback<SpeechSynthesisUtterance>): VSpeechSynthesis {
 		utterSignal.handle(cb);
 		return this;
 	}
 
-	public function cancel(): Synthesis {
+	public function cancel(): VSpeechSynthesis {
 		speechSynthesis.cancel();
 		return this;
 	}
 
-	public function pause(): Synthesis {
+	public function pause(): VSpeechSynthesis {
 		speechSynthesis.pause();
 		return this;
 	}
 
-	public function resume(): Synthesis {
+	public function resume(): VSpeechSynthesis {
 		speechSynthesis.resume();
 		return this;
 	}
 
-	public function togglePlaying(): Synthesis {
+	public function togglePlaying(): VSpeechSynthesis {
 		if (speechSynthesis.paused) {
 			speechSynthesis.resume();
 		} else {

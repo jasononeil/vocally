@@ -1,7 +1,7 @@
 {
-  "name": "readout",
+  "name": "vocally",
   "version": "0.0.1",
-  "description": "An API for reading strings and DOM nodes using the VoiceSynthesisAPI",
+  "description": "A friendly cross-browser library for working with the Web Speech APIs (both SpeechSynthesis and SpeechRecognition)",
   "main": "dist/index.js",
   "author": "Jason O'Neil <jason.oneil@gmail.com>",
   "license": "MIT"

@@ -4,13 +4,16 @@
 
  The Web Speech API includes two main parts:
 
- - [SpeechSynthesis][] - teaching your page to talk. Works in most modern browsers.
- - [SpeechRecognition][] - teaching your page to listen. Currently Chrome only, but can be polyfilled with commercial APIs.
+ - [SpeechSynthesis][] - teaching your page to talk. [Works in most modern browsers][can-i-use-synthesis].
+ - [SpeechRecognition][] - teaching your page to listen. [Currently Chrome only][can-i-use-recognition], but [can be polyfilled with commercial APIs][bing-polyfill].
 
  Vocally is an easy to use JavaScript API for interacting with both.
 
 [SpeechSynthesis]: https://developer.mozilla.org/en-US/docs/Web/API/SpeechSynthesis
+[can-i-use-synthesis]: https://caniuse.com/#search=speechsynthesis
 [SpeechRecognition]: https://developer.mozilla.org/en-US/docs/Web/API/SpeechRecognition
+[can-i-use-recognition]: https://caniuse.com/#search=speechrecognition
+[bing-polyfill]: https://github.com/compulim/web-speech-cognitive-services
 
 ## Installation
 
@@ -19,6 +22,74 @@ TODO
 ## Usage
 
 TODO
+
+- `import vocally from 'vocally';`
+
+### Making it speak
+
+The basic API:
+
+- `vocally.say('Hello!')` - read a single string out loud
+- `vocally.read(someElement)` - read out all of the text in an element
+- `vocally.pauseFor(3)` - add a gap before saying the next thing
+- `vocally.pause()` - pause where you are at
+- `vocally.resume()` - resume from where you paused
+- `vocally.togglePlaying()` - pause or resume
+- `vocally.onSpeak(utterance => console.log('we said', utterance))` - receive a callback every time a new "utterance" is spoken - useful for providing a visual alternative for those who prefer reading to listening.
+
+You can chain these together:
+
+```js
+vocally
+	.say("Alright, let's read this article!")
+	.pause(2)
+	.read(document.querySelector('article'))
+	.onSpeak(utterance => textAlternative.innerText = utterance.text);
+```
+
+And helpers:
+
+- `vocally.synthesis.getVoices(): Array<SpeechSynthesisVoice>`
+- `vocally.synthesis.getDefaultVoice(): SpeechSynthesisVoice`
+
+### Making it listen
+
+- `vocally.transcribe(onDraft): Promise<SpeechRecognitionResultList>` - listen for the first recognition result - suitable for a single short sentence, input or command.
+- (coming soon) `vocally.transcribeLongForm(onDraft): ()->Promise<SpeechRecognitionResultList>` - keep transcribing until you tell it to stop.
+- (coming soon) `vocally.listenFor(command)` or `vocally.listenFor([command1, command2, ...])`
+
+  Simple example:
+
+  ```js
+  vocally.listenFor([
+	  {
+		  text: 'up',
+		  waitForFinal: false, // execute even if it's a draft response
+		  handler: () => window.scrollTo(0, window.pageYOffset - 100)
+	  },
+	  {
+		  text: 'down',
+		  waitForFinal: false, // execute even if it's a draft response
+		  handler: () => window.scrollTo(0, window.pageYOffset + 100)
+	  }
+  ])
+  ```
+
+  Wildcard example:
+
+  ```js
+  let name = 'friend';
+  vocally.listenFor({
+	text: 'my name is $1',
+	alternatives: ['I am $1', 'you can call me $1'],
+	handler: (wildcards) => {
+		name = wildcards[0];
+		vocally.say(`Hello ${name}`);
+	}
+  })
+  ```
+
+- `vocally.stopListening()`
 
 ## Examples
 
@@ -45,6 +116,14 @@ I chose the name because it's a relevant word that wasn't already taken (*The fi
 I also liked how I imagined the API methods would sound: `vocally.say()`, `vocally.read()`, `vocally.listen()`.
 
 Finally, I thought it was a node to the Accessibility community, which often uses the numeronym "a11y" (or "ally") as an abbreviation - because I had the idea for this project starting at the Perth Web Accessibility Camp in 2018, and I believe the biggest opportunity for this technology is to make the web inclusive to more people in more ways.
+
+### Other projects
+
+Seemingly abandoned projects:
+
+- https://www.npmjs.com/package/speechless
+- https://github.com/sdkcarlos/artyom.js/
+- https://www.npmjs.com/package/speechjs
 
 ### License
 
