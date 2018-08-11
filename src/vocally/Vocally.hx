@@ -81,12 +81,12 @@ class Vocally {
 
 	// RECOGNITION
 
-	public static function transcribe() {
-		return recognition.transcribe();
+	public static function listenOnce() {
+		return recognition.listenOnce();
 	}
 
-	public static function transcribeLongForm() {
-		return recognition.transcribeLongForm();
+	public static function listen() {
+		return recognition.listen();
 	}
 
 	public static function listenFor(commands: Either<ListenForCommand, Array<ListenForCommand>>) {
@@ -94,6 +94,7 @@ class Vocally {
 	}
 
 	public static function stopListening() {
+		recognition.stopListening();
 		return Vocally;
 	}
 

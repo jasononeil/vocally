@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Vocally Speech Recognition Example</title>
+
+    <style>
+        *,
+        button {
+            font-family: "Ideal Sans", "Helvetica";
+            font-weight: 300;
+        }
+
+        body {
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            margin: 0;
+
+            background: #727193;
+            color: white;
+        }
+
+        h3 {
+            margin-top: auto;
+            margin-bottom: 0;
+            font-size: 18px;
+        }
+
+        button {
+            padding: 1em;
+            background: white;
+            color: #727193;
+            font-size: 18px;
+        }
+
+        .result-display {
+            flex: 1;
+            margin-top: 20px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        ul {
+            padding: 0;
+        }
+
+        #results li,
+        #draft {
+            list-style: none;
+            margin: 2em 0;
+            font-size: 32px;
+        }
+
+        #draft {
+            opacity: 0.5;
+            font-style: italic;
+        }
+    </style>
+</head>
+
+<body>
+    <button id="btn">Start listening</button>
+    <div class="result-display">
+        <h3>Results</h3>
+        <p id="draft"></p>
+        <ul id="results"></ul>
+    </div>
+    <script src="index.js"></script>
+
+    <script>
+        const button = document.getElementById('btn')
+        const draft = document.getElementById('draft');
+        const results = document.getElementById('results');
+        let listening = false;
+
+        function htmlForResult(result) {
+            return `${result.transcript} <em>(${result.confidence.toFixed(2)})</em>`;
+        }
+
+        function start() {
+            vocally
+                .listen()
+                .onDraft(draftResult => draft.innerHTML = htmlForResult(draftResult))
+                .onResult(result => {
+                    draft.innerHTML = "";
+                    results.innerHTML = `<li>${htmlForResult(result)}</li>${results.innerHTML}`;
+                })
+                .onError(err => alert('Error: ' + err))
+                .finalResult()
+                .then(result => {
+                    alert(`${result.transcript} (${result.confidence}, ${result.allResults.length} parts)`);
+                    stop();
+                });
+            listening = true;
+            button.innerText = 'Listening! Click to stop';
+        }
+
+        function stop() {
+            vocally.stopListening();
+            listening = false;
+            button.innerText = 'Click to listen again';
+        }
+
+        button.onclick = () => {
+            if (!listening) {
+                start();
+            } else {
+                stop();
+            }
+        }
+
+
+
+
+    </script>
+</body>
+
+</html>
