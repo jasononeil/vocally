@@ -34,8 +34,55 @@ class VSpeechRecognition {
 		return newRecogniser().start(true);
 	}
 
-	public function listenFor(commands: Either<ListenForCommand, Array<ListenForCommand>>): VSpeechRecognition {
-		return this;
+	public function listenFor(commandOrCommands: Either<ListenForCommand, Array<ListenForCommand>>): Recognizer {
+		var commands: Array<ListenForCommand> =
+			(Std.is(commandOrCommands, Array))
+			? cast commandOrCommands
+			: [cast commandOrCommands];
+		var draftCommands = commands.filter(c -> c.respondOnDraft);
+		var sureCommands = commands.filter(c -> !c.respondOnDraft);
+		// Keep track of which draft commands have already run, so they aren't triggered again for each updated draft.
+		var draftCommandsTriggered = [];
+		function match(commandAlts: Array<String>, transcriptAlts: Array<String>) {
+			// TODO: allow repeating a command within a draft by saying it twice (but not by the draft triggering twice)
+			for (cmd in commandAlts) {
+				for (transcript in transcriptAlts) {
+					if (transcript.toLowerCase().indexOf(cmd.toLowerCase()) > -1) {
+						return Some({
+							transcript: transcript,
+							command: cmd
+						});
+					}
+				}
+			}
+			return None;
+		}
+		function checkCommands(result: SpeechRecognitionResult, commands: Array<ListenForCommand>, commandsToIgnore: Array<ListenForCommand>) {
+			for (cmd in commands) {
+				if (commandsToIgnore.indexOf(cmd) > -1) {
+					continue;
+				}
+				var cmdAlts = [cmd.command].concat(cmd.alternatives != null ? cmd.alternatives : []);
+				var transcriptAlts = [for (alt in result) alt.transcript];
+				switch match(cmdAlts, transcriptAlts) {
+					case Some(match):
+						draftCommandsTriggered.push(cmd);
+						cmd.handler.invoke({
+							transcript: match.transcript,
+							command: match.command,
+							wildcards: []
+						});
+					case None:
+				}
+			}
+		}
+		return newRecogniser()
+			.onDraftAlternatives(draft -> checkCommands(draft, draftCommands, draftCommandsTriggered))
+			.onResultAlternatives(result -> {
+				draftCommandsTriggered = [];
+				checkCommands(result, sureCommands, []);
+			})
+			.start(true);
 	}
 
 	/** Abort all current SpeechRecognition listeners. **/
@@ -71,7 +118,9 @@ class Recognizer {
 	public var recognizer: SpeechRecognition;
 	var results: Option<SpeechRecognitionResultList>;
 	var resultSignal: SignalTrigger<SpeechRecognitionAlternative>;
+	var resultAlternativesSignal: SignalTrigger<SpeechRecognitionResult>;
 	var draftSignal: SignalTrigger<SpeechRecognitionAlternative>;
+	var draftAlternativesSignal: SignalTrigger<SpeechRecognitionResult>;
 	var errorSignal: SignalTrigger<SpeechRecognitionError>;
 	var promise: Option<{
 		promise: Promise<FinalSpeechRecognitionResult>,
@@ -82,7 +131,9 @@ class Recognizer {
 	public function new(cls: Class<SpeechRecognition>) {
 		recognizer = Type.createInstance(cls, []);
 		resultSignal = new SignalTrigger();
+		resultAlternativesSignal = new SignalTrigger();
 		draftSignal = new SignalTrigger();
+		draftAlternativesSignal = new SignalTrigger();
 		errorSignal = new SignalTrigger();
 		promise = None;
 		results = None;
@@ -99,7 +150,12 @@ class Recognizer {
 			if (lastResult.length > 0) {
 				var alternative = lastResult[0];
 				var signal = lastResult.isFinal ? resultSignal : draftSignal;
+				var alternativesSignal =
+					lastResult.isFinal
+					? resultAlternativesSignal
+					: draftAlternativesSignal;
 				signal.trigger(alternative);
+				alternativesSignal.trigger(lastResult);
 			}
 		});
 		recognizer.addEventListener("speechend", () -> stop());
@@ -167,8 +223,18 @@ class Recognizer {
 		return this;
 	}
 
+	public function onResultAlternatives(cb: Callback<SpeechRecognitionResult>): Recognizer {
+		resultAlternativesSignal.handle(cb);
+		return this;
+	}
+
 	public function onDraft(cb: Callback<SpeechRecognitionAlternative>): Recognizer {
 		draftSignal.handle(cb);
+		return this;
+	}
+
+	public function onDraftAlternatives(cb: Callback<SpeechRecognitionResult>): Recognizer {
+		draftAlternativesSignal.handle(cb);
 		return this;
 	}
 
@@ -210,8 +276,19 @@ typedef FinalSpeechRecognitionResult = {
 }
 
 typedef ListenForCommand = {
-	text: String,
-	handler: Callback<Array<String>>,
-	waitForFinal: Bool,
-	alternatives: Array<String>,
+	/** The command we are listening for **/
+	var command: String;
+	/** A function to execute when the command is recognised. **/
+	var handler: Callback<{
+		/** The transcript of the result that matched. **/
+		var transcript: String;
+		/** The command text (or alternative command text) that matched. **/
+		var command: String;
+		/** Any wildcards found. **/
+		var wildcards: Array<String>;
+	}>;
+	/** Whether to wait for a final result or execute as soon as it occurs in a draft. **/
+	@:optional var respondOnDraft: Bool;
+	/** Alternative versions of the **/
+	@:optional var alternatives: Array<String>;
 }

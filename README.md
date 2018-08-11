@@ -64,12 +64,12 @@ And helpers:
   vocally.listenFor([
 	  {
 		  text: 'up',
-		  waitForFinal: false, // execute even if it's a draft response
+		  respondOnDraft: false, // execute even if it's a draft response
 		  handler: () => window.scrollTo(0, window.pageYOffset - 100)
 	  },
 	  {
 		  text: 'down',
-		  waitForFinal: false, // execute even if it's a draft response
+		  respondOnDraft: false, // execute even if it's a draft response
 		  handler: () => window.scrollTo(0, window.pageYOffset + 100)
 	  }
   ])
@@ -82,8 +82,8 @@ And helpers:
   vocally.listenFor({
 	text: 'my name is $1',
 	alternatives: ['I am $1', 'you can call me $1'],
-	handler: (wildcards) => {
-		name = wildcards[0];
+	handler: (matched) => {
+		name = matched.wildcards[0];
 		vocally.say(`Hello ${name}`);
 	}
   })

@@ -21,13 +21,6 @@ HxOverrides.substr = function(s,pos,len) {
 	}
 	return s.substr(pos,len);
 };
-HxOverrides.iter = function(a) {
-	return { cur : 0, arr : a, hasNext : function() {
-		return this.cur < this.arr.length;
-	}, next : function() {
-		return this.arr[this.cur++];
-	}};
-};
 Math.__name__ = true;
 var Reflect = function() { };
 Reflect.__name__ = true;
@@ -170,8 +163,68 @@ vocally_VSpeechRecognition.prototype = {
 	,listen: function() {
 		return this.newRecogniser().start(true);
 	}
-	,listenFor: function(commands) {
-		return this;
+	,listenFor: function(commandOrCommands) {
+		var commands = (commandOrCommands instanceof Array) && commandOrCommands.__enum__ == null ? commandOrCommands : [commandOrCommands];
+		var draftCommands = commands.filter(function(c) {
+			return c.respondOnDraft;
+		});
+		var sureCommands = commands.filter(function(c1) {
+			return !c1.respondOnDraft;
+		});
+		var draftCommandsTriggered = [];
+		var match = function(commandAlts,transcriptAlts) {
+			var _g = 0;
+			while(_g < commandAlts.length) {
+				var cmd = commandAlts[_g];
+				++_g;
+				var _g1 = 0;
+				while(_g1 < transcriptAlts.length) {
+					var transcript = transcriptAlts[_g1];
+					++_g1;
+					if(transcript.toLowerCase().indexOf(cmd.toLowerCase()) > -1) {
+						return haxe_ds_Option.Some({ transcript : transcript, command : cmd});
+					}
+				}
+			}
+			return haxe_ds_Option.None;
+		};
+		var checkCommands = function(result,commands1,commandsToIgnore) {
+			var _g2 = 0;
+			while(_g2 < commands1.length) {
+				var cmd1 = commands1[_g2];
+				++_g2;
+				if(commandsToIgnore.indexOf(cmd1) > -1) {
+					continue;
+				}
+				var cmdAlts = [cmd1.command].concat(cmd1.alternatives != null ? cmd1.alternatives : []);
+				var _g11 = [];
+				var _g21 = 0;
+				while(_g21 < result.length) {
+					var alt = result[_g21];
+					++_g21;
+					_g11.push(alt.transcript);
+				}
+				var transcriptAlts1 = _g11;
+				var _g22 = match(cmdAlts,transcriptAlts1);
+				switch(_g22._hx_index) {
+				case 0:
+					var match1 = _g22.v;
+					draftCommandsTriggered.push(cmd1);
+					tink_core__$Callback_Callback_$Impl_$.invoke(cmd1.handler,{ transcript : match1.transcript, command : match1.command, wildcards : []});
+					break;
+				case 1:
+					break;
+				}
+			}
+		};
+		return this.newRecogniser().onDraftAlternatives(function(draft) {
+			checkCommands(draft,draftCommands,draftCommandsTriggered);
+			return;
+		}).onResultAlternatives(function(result1) {
+			draftCommandsTriggered = [];
+			checkCommands(result1,sureCommands,[]);
+			return;
+		}).start(true);
 	}
 	,stopListening: function() {
 		var _g = 0;
@@ -179,7 +232,7 @@ vocally_VSpeechRecognition.prototype = {
 		while(_g < _g1.length) {
 			var r = _g1[_g];
 			++_g;
-			r.stop();
+			r.abort();
 		}
 		return this;
 	}
@@ -194,7 +247,6 @@ vocally_VSpeechRecognition.prototype = {
 			var cls = _g.v;
 			var recognizer = new vocally_Recognizer(cls);
 			this.allRecognizers.push(recognizer);
-			console.log("src/vocally/VSpeechRecognition.hx:58:","Created a new recognizer, now we have " + this.allRecognizers.length);
 			return recognizer;
 		case 1:
 			throw new js__$Boot_HaxeError("SpeechRecognition is not supported in this browser and a polyfill was not found");
@@ -205,7 +257,9 @@ var vocally_Recognizer = function(cls) {
 	var _gthis = this;
 	this.recognizer = Type.createInstance(cls,[]);
 	this.resultSignal = new tink_core_SignalTrigger();
+	this.resultAlternativesSignal = new tink_core_SignalTrigger();
 	this.draftSignal = new tink_core_SignalTrigger();
+	this.draftAlternativesSignal = new tink_core_SignalTrigger();
 	this.errorSignal = new tink_core_SignalTrigger();
 	this.promise = haxe_ds_Option.None;
 	this.results = haxe_ds_Option.None;
@@ -220,7 +274,9 @@ var vocally_Recognizer = function(cls) {
 		if(lastResult.length > 0) {
 			var alternative = lastResult[0];
 			var signal = lastResult.isFinal ? _gthis.resultSignal : _gthis.draftSignal;
+			var alternativesSignal = lastResult.isFinal ? _gthis.resultAlternativesSignal : _gthis.draftAlternativesSignal;
 			tink_core__$Callback_CallbackList_$Impl_$.invoke(signal.handlers,alternative);
+			tink_core__$Callback_CallbackList_$Impl_$.invoke(alternativesSignal.handlers,lastResult);
 		}
 		return;
 	});
@@ -292,8 +348,16 @@ vocally_Recognizer.prototype = {
 		tink_core__$Callback_CallbackList_$Impl_$.add(this.resultSignal.handlers,cb);
 		return this;
 	}
+	,onResultAlternatives: function(cb) {
+		tink_core__$Callback_CallbackList_$Impl_$.add(this.resultAlternativesSignal.handlers,cb);
+		return this;
+	}
 	,onDraft: function(cb) {
 		tink_core__$Callback_CallbackList_$Impl_$.add(this.draftSignal.handlers,cb);
+		return this;
+	}
+	,onDraftAlternatives: function(cb) {
+		tink_core__$Callback_CallbackList_$Impl_$.add(this.draftAlternativesSignal.handlers,cb);
 		return this;
 	}
 	,onError: function(cb) {
