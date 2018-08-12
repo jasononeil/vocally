@@ -54,36 +54,36 @@ And helpers:
 
 ### Making it listen
 
-- `vocally.transcribe(onDraft): Promise<SpeechRecognitionResultList>` - listen for the first recognition result - suitable for a single short sentence, input or command.
-- (coming soon) `vocally.transcribeLongForm(onDraft): ()->Promise<SpeechRecognitionResultList>` - keep transcribing until you tell it to stop.
-- (coming soon) `vocally.listenFor(command)` or `vocally.listenFor([command1, command2, ...])`
+- `vocally.listenOnce(): Recognizer` - listen for the first recognition result - suitable for a single short sentence, input or command.
+- `vocally.listen(): Recognizer` - keep transcribing until you tell it to stop.
+- `vocally.listenFor(command)` or `vocally.listenFor([command1, command2, ...])`
 
   Simple example:
 
   ```js
   vocally.listenFor([
 	  {
-		  text: 'up',
+		  command: 'up',
 		  respondOnDraft: false, // execute even if it's a draft response
 		  handler: () => window.scrollTo(0, window.pageYOffset - 100)
 	  },
 	  {
-		  text: 'down',
+		  command: 'down',
 		  respondOnDraft: false, // execute even if it's a draft response
 		  handler: () => window.scrollTo(0, window.pageYOffset + 100)
 	  }
   ])
   ```
 
-  Wildcard example:
+  Your commands and alternatives are treated as regular expressions, so you can do wildcard matches:
 
   ```js
-  let name = 'friend';
   vocally.listenFor({
-	text: 'my name is $1',
-	alternatives: ['I am $1', 'you can call me $1'],
+	command: 'my name is (\w+)',
+	alternatives: ['I am (\w+)', 'you can call me (\w+)'],
 	handler: (matched) => {
-		name = matched.wildcards[0];
+		// matched: { command: {...}, alternative: 'I am (\w+)', matches: ['i am jason', 'jason'] }
+		let name = matched.wildcards[1];
 		vocally.say(`Hello ${name}`);
 	}
   })

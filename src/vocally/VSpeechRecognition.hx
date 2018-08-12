@@ -1,6 +1,7 @@
 package vocally;
 
 import haxe.ds.Either;
+import haxe.extern.EitherType;
 import js.Browser.window;
 import js.html.*;
 import haxe.ds.Option;
@@ -46,11 +47,22 @@ class VSpeechRecognition {
 		function match(commandAlts: Array<String>, transcriptAlts: Array<String>) {
 			// TODO: allow repeating a command within a draft by saying it twice (but not by the draft triggering twice)
 			for (cmd in commandAlts) {
+				var cmdRegex = new EReg(cmd, 'i');
 				for (transcript in transcriptAlts) {
-					if (transcript.toLowerCase().indexOf(cmd.toLowerCase()) > -1) {
+					if (cmdRegex.match(transcript)) {
+						var wildcards = [];
+						var i = 0;
+						while (true) {
+							try {
+								wildcards.push(cmdRegex.matched(i++));
+							} catch (e: Dynamic) {
+								break;
+							}
+						}
 						return Some({
 							transcript: transcript,
-							command: cmd
+							command: cmd,
+							wildcards: wildcards
 						});
 					}
 				}
@@ -67,11 +79,7 @@ class VSpeechRecognition {
 				switch match(cmdAlts, transcriptAlts) {
 					case Some(match):
 						draftCommandsTriggered.push(cmd);
-						cmd.handler.invoke({
-							transcript: match.transcript,
-							command: match.command,
-							wildcards: []
-						});
+						cmd.handler.invoke(match);
 					case None:
 				}
 			}

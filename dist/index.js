@@ -7,6 +7,27 @@ function $extend(from, fields) {
 	if( fields.toString !== Object.prototype.toString ) proto.toString = fields.toString;
 	return proto;
 }
+var EReg = function(r,opt) {
+	this.r = new RegExp(r,opt.split("u").join(""));
+};
+EReg.__name__ = true;
+EReg.prototype = {
+	match: function(s) {
+		if(this.r.global) {
+			this.r.lastIndex = 0;
+		}
+		this.r.m = this.r.exec(s);
+		this.r.s = s;
+		return this.r.m != null;
+	}
+	,matched: function(n) {
+		if(this.r.m != null && n >= 0 && n < this.r.m.length) {
+			return this.r.m[n];
+		} else {
+			throw new js__$Boot_HaxeError("EReg::matched");
+		}
+	}
+};
 var HxOverrides = function() { };
 HxOverrides.__name__ = true;
 HxOverrides.substr = function(s,pos,len) {
@@ -89,6 +110,95 @@ js__$Boot_HaxeError.wrap = function(val) {
 js__$Boot_HaxeError.__super__ = Error;
 js__$Boot_HaxeError.prototype = $extend(Error.prototype,{
 });
+var js_Boot = function() { };
+js_Boot.__name__ = true;
+js_Boot.__string_rec = function(o,s) {
+	if(o == null) {
+		return "null";
+	}
+	if(s.length >= 5) {
+		return "<...>";
+	}
+	var t = typeof(o);
+	if(t == "function" && (o.__name__ || o.__ename__)) {
+		t = "object";
+	}
+	switch(t) {
+	case "function":
+		return "<function>";
+	case "object":
+		if(o.__enum__) {
+			var e = $hxEnums[o.__enum__];
+			var n = e.__constructs__[o._hx_index];
+			var con = e[n];
+			if(con.__params__) {
+				s += "\t";
+				var tmp = n + "(";
+				var _g = [];
+				var _g1 = 0;
+				var _g2 = con.__params__;
+				while(_g1 < _g2.length) {
+					var p = _g2[_g1];
+					++_g1;
+					_g.push(js_Boot.__string_rec(o[p],s));
+				}
+				return tmp + _g.join(",") + ")";
+			} else {
+				return n;
+			}
+		}
+		if((o instanceof Array)) {
+			var l = o.length;
+			var i;
+			var str = "[";
+			s += "\t";
+			var _g11 = 0;
+			var _g3 = l;
+			while(_g11 < _g3) {
+				var i1 = _g11++;
+				str += (i1 > 0 ? "," : "") + js_Boot.__string_rec(o[i1],s);
+			}
+			str += "]";
+			return str;
+		}
+		var tostr;
+		try {
+			tostr = o.toString;
+		} catch( e1 ) {
+			var e2 = (e1 instanceof js__$Boot_HaxeError) ? e1.val : e1;
+			return "???";
+		}
+		if(tostr != null && tostr != Object.toString && typeof(tostr) == "function") {
+			var s2 = o.toString();
+			if(s2 != "[object Object]") {
+				return s2;
+			}
+		}
+		var k = null;
+		var str1 = "{\n";
+		s += "\t";
+		var hasp = o.hasOwnProperty != null;
+		for( var k in o ) {
+		if(hasp && !o.hasOwnProperty(k)) {
+			continue;
+		}
+		if(k == "prototype" || k == "__class__" || k == "__super__" || k == "__interfaces__" || k == "__properties__") {
+			continue;
+		}
+		if(str1.length != 2) {
+			str1 += ", \n";
+		}
+		str1 += s + k + " : " + js_Boot.__string_rec(o[k],s);
+		}
+		s = s.substring(1);
+		str1 += "\n" + s + "}";
+		return str1;
+	case "string":
+		return o;
+	default:
+		return String(o);
+	}
+};
 var tink_core__$Callback_Callback_$Impl_$ = {};
 tink_core__$Callback_Callback_$Impl_$.__name__ = true;
 tink_core__$Callback_Callback_$Impl_$.invoke = function(this1,data) {
@@ -177,12 +287,21 @@ vocally_VSpeechRecognition.prototype = {
 			while(_g < commandAlts.length) {
 				var cmd = commandAlts[_g];
 				++_g;
+				var cmdRegex = new EReg(cmd,"i");
 				var _g1 = 0;
 				while(_g1 < transcriptAlts.length) {
 					var transcript = transcriptAlts[_g1];
 					++_g1;
-					if(transcript.toLowerCase().indexOf(cmd.toLowerCase()) > -1) {
-						return haxe_ds_Option.Some({ transcript : transcript, command : cmd});
+					if(cmdRegex.match(transcript)) {
+						var wildcards = [];
+						var i = 0;
+						while(true) try {
+							wildcards.push(cmdRegex.matched(i++));
+						} catch( e ) {
+							var e1 = (e instanceof js__$Boot_HaxeError) ? e.val : e;
+							break;
+						}
+						return haxe_ds_Option.Some({ transcript : transcript, command : cmd, wildcards : wildcards});
 					}
 				}
 			}
@@ -210,7 +329,7 @@ vocally_VSpeechRecognition.prototype = {
 				case 0:
 					var match1 = _g22.v;
 					draftCommandsTriggered.push(cmd1);
-					tink_core__$Callback_Callback_$Impl_$.invoke(cmd1.handler,{ transcript : match1.transcript, command : match1.command, wildcards : []});
+					tink_core__$Callback_Callback_$Impl_$.invoke(cmd1.handler,match1);
 					break;
 				case 1:
 					break;
