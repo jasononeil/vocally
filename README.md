@@ -82,7 +82,7 @@ And helpers:
 	command: 'my name is (\w+)',
 	alternatives: ['I am (\w+)', 'you can call me (\w+)'],
 	handler: (matched) => {
-		// matched: { command: {...}, alternative: 'I am (\w+)', matches: ['i am jason', 'jason'] }
+		// matched: { command: 'I am (\w+)', alternative: 'i am jason', matches: ['i am jason', 'jason'] }
 		let name = matched.wildcards[1];
 		vocally.say(`Hello ${name}`);
 	}
