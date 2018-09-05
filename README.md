@@ -17,13 +17,15 @@
 
 ## Installation
 
-TODO
+`npm install vocally --save`
+
+or
+
+`yarn add vocally`
 
 ## Usage
 
-TODO
-
-- `import vocally from 'vocally';`
+- `import { vocally } from 'vocally';`
 
 ### Making it speak
 
