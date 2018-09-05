@@ -17,9 +17,11 @@
 
 ## Installation
 
+### NPM
+
 `npm install vocally --save`
 
-or
+### Yarn
 
 `yarn add vocally`
 
